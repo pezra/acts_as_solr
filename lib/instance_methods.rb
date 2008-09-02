@@ -18,6 +18,8 @@ module ActsAsSolr #:nodoc:
       else
         solr_destroy
       end
+    rescue 
+      logger.error "Could not add or remove document in Solr: #{$!}"
     end
 
     # remove from index

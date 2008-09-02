@@ -432,4 +432,14 @@ class ActsAsSolrTest < Test::Unit::TestCase
     Encyclopedia.acts_as_solr
     assert_equal "Novella: Something Short", Encyclopedia.new(:name => "Something Short").name_for_solr 
   end
+
+  def test_should_not_stop_save_if_solr_commit_fails
+    b = Book.create!(:name => "test_should_not_stop_save_if_solr_commit_fails", :category_id => 1, :author => 'Peter Williams')
+    b.stubs(:solr_commit).raises(RuntimeError, "something bad happened")
+
+    assert_nothing_raised {
+      b.name = "Ruby not for dummies"
+      b.save!
+    }
+  end
 end
