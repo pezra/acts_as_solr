@@ -4,6 +4,11 @@ class Encyclopedia < ActiveRecord::Base
   set_table_name :books
 end
 
+class Dictionary < ActiveRecord::Base
+  set_table_name :books
+  acts_as_solr :fields => [:name]
+end
+ 
 class ActsAsSolrTest < Test::Unit::TestCase
   
   fixtures :books, :movies, :electronics, :postings, :authors
@@ -209,7 +214,7 @@ class ActsAsSolrTest < Test::Unit::TestCase
     Book.find(:first).solr_destroy
     assert_equal 0, Book.count_by_solr('splinter')
     
-    Book.find(:first).solr_save
+    Book.find(:first).solr_save(true)
     assert_equal 1, Book.count_by_solr('splinter')
   end
   
@@ -442,4 +447,21 @@ class ActsAsSolrTest < Test::Unit::TestCase
       b.save!
     }
   end
+
+  def test_should_not_reindex_if_no_indexed_fields_are_changed
+    b = Dictionary.create!(:name=> "my dictionary", :author => "unknown", :category_id => 1)
+    b.expects(:solr_add).never
+
+    b.author = "me"
+    b.save!
+  end
+
+  def test_should_be_reindex_if_an_indexed_field_is_changed
+    b = Dictionary.create!(:name=> "my dictionary", :author => "unknown", :category_id => 1)
+    b.expects(:solr_add).once
+
+    b.name = "Webster's Dictionary"
+    b.save!
+  end
+
 end

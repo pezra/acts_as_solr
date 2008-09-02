@@ -7,9 +7,28 @@ module ActsAsSolr #:nodoc:
       "#{self.class.name}:#{record_id(self)}"
     end
 
+    def solr_indexed_fields
+      configuration[:solr_fields].map do |f|
+        f = f.first if f.respond_to?(:first)
+        f.to_s
+      end
+    end
+
+    def needs_solr_indexing?
+      return true unless respond_to?(:changed)
+      return true unless configuration.has_key?(:solr_fields)
+      return true unless configuration[:facets].blank?
+      # We can figure out if the changed fields are indexed by solr.
+      
+      changed_indexed_fields = (changed & solr_indexed_fields)
+      !changed_indexed_fields.empty?
+    end
+
     # saves to the Solr index
-    def solr_save
+    def solr_save(force = false)
+      return true unless needs_solr_indexing? || force  # This object does not need to be reindexed
       return true unless configuration[:if] 
+
       if evaluate_condition(configuration[:if], self) 
         logger.debug "solr_save: #{self.class.name} : #{record_id(self)}"
         solr_add to_solr_doc
