@@ -5,7 +5,7 @@ module ActsAsSolr::IndexedAtStamp
     end
   end
   
-  def solr_save_with_indexed_at_stamp(force)
+  def solr_save_with_indexed_at_stamp(force = false)
     returning(solr_save_without_indexed_at_stamp(force)) do
       stamp_last_indexed_at_if_column_exists
     end
