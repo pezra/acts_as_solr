@@ -6,7 +6,7 @@ end
 
 class Dictionary < ActiveRecord::Base
   set_table_name :books
-  acts_as_solr :fields => [:name]
+  acts_as_solr :fields => [:name], :noncritial_index => true
 end
  
 class ActsAsSolrTest < Test::Unit::TestCase
@@ -438,12 +438,20 @@ class ActsAsSolrTest < Test::Unit::TestCase
     assert_equal "Novella: Something Short", Encyclopedia.new(:name => "Something Short").name_for_solr 
   end
 
-  def test_should_not_stop_save_if_solr_commit_fails
-    b = Book.create!(:name => "test_should_not_stop_save_if_solr_commit_fails", :category_id => 1, :author => 'Peter Williams')
+  def test_should_not_stop_save_if_solr_commit_fails_when_noncritical_index_is_true
+    b = Dictionary.new(:name => "test_should_not_stop_save_if_solr_commit_fails", :category_id => 1, :author => 'Peter Williams')
     b.stubs(:solr_commit).raises(RuntimeError, "something bad happened")
 
     assert_nothing_raised {
-      b.name = "Ruby not for dummies"
+      b.save!
+    }
+  end
+
+  def test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false
+    b = Book.new(:name => "test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false", :category_id => 1, :author => 'Peter Williams')
+    b.stubs(:solr_commit).raises(RuntimeError, "something bad happened")
+
+    assert_raise(RuntimeError) {
       b.save!
     }
   end
@@ -463,5 +471,4 @@ class ActsAsSolrTest < Test::Unit::TestCase
     b.name = "Webster's Dictionary"
     b.save!
   end
-
 end
