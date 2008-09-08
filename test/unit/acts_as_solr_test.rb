@@ -440,7 +440,7 @@ class ActsAsSolrTest < Test::Unit::TestCase
 
   def test_should_not_stop_save_if_solr_commit_fails_when_noncritical_index_is_true
     b = Dictionary.new(:name => "test_should_not_stop_save_if_solr_commit_fails", :category_id => 1, :author => 'Peter Williams')
-    b.stubs(:solr_commit).raises(RuntimeError, "something bad happened")
+    b.stubs(:solr_commit).raises(Class.new(Exception), "something bad happened")
 
     assert_nothing_raised {
       b.save!
@@ -448,10 +448,11 @@ class ActsAsSolrTest < Test::Unit::TestCase
   end
 
   def test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false
+    my_exception_class = Class.new(Exception)
     b = Book.new(:name => "test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false", :category_id => 1, :author => 'Peter Williams')
-    b.stubs(:solr_commit).raises(RuntimeError, "something bad happened")
+    b.stubs(:solr_commit).raises(my_exception_class, "something bad happened")
 
-    assert_raise(RuntimeError) {
+    assert_raise(my_exception_class) {
       b.save!
     }
   end
