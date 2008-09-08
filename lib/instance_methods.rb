@@ -26,10 +26,10 @@ module ActsAsSolr #:nodoc:
 
     # saves to the Solr index
     def solr_save(force = false)
-      return true unless needs_solr_indexing? || force  # This object does not need to be reindexed
       return true unless configuration[:if] 
 
       if evaluate_condition(configuration[:if], self) 
+        return true unless needs_solr_indexing? || force  # This object does not need to be reindexed
         logger.debug "solr_save: #{self.class.name} : #{record_id(self)}"
         solr_add to_solr_doc
         solr_commit if configuration[:auto_commit]
