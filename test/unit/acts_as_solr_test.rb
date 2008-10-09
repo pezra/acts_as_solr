@@ -472,4 +472,13 @@ class ActsAsSolrTest < Test::Unit::TestCase
     b.name = "Webster's Dictionary"
     b.save!
   end
+
+  def test_should_handle_missing_record_from_results
+    book = Book.create!(:name => "Hello, Hello", :author => "unknown", :category_id => 1)
+    Book.delete(book.id)
+
+    assert_nothing_raised {
+      results = Book.find_by_solr 'hello'
+    }
+  end
 end

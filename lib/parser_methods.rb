@@ -137,9 +137,8 @@ module ActsAsSolr #:nodoc:
         if record
           ordered_things << record
         else
-          # this should fail silently?
-          # logger.error("SOLR index Out of sync! The id #{id} is in the Solr index but missing in the database!")
-          raise("Out of sync! The id #{id} is in the Solr index but missing in the database!")
+          logger.error("SOLR index Out of sync! The id #{id} is in the Solr index but missing in the database!")
+          # Should this silently remove missing records from the index?
         end
       end
       ordered_things
