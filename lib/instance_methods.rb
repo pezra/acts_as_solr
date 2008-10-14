@@ -38,11 +38,11 @@ module ActsAsSolr #:nodoc:
         solr_destroy
       end
     rescue Exception => e
-      if configuration[:noncritial_index]
-        # Just log the failure and return as if it worked
-        logger.error "Could not add or remove document in Solr: #{$!}"
-      else
+      if configuration[:crucial]
         raise e
+      else
+        # Just log the failure and return as if it worked
+        logger.error "Could not add or remove document in Solr: #{$!}"        
       end
     end
 

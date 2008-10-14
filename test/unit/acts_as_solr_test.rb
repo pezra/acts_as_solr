@@ -6,7 +6,7 @@ end
 
 class Dictionary < ActiveRecord::Base
   set_table_name :books
-  acts_as_solr :fields => [:name], :noncritial_index => true
+  acts_as_solr :fields => [:name], :crucial => false
 end
  
 class ActsAsSolrTest < Test::Unit::TestCase
@@ -438,7 +438,7 @@ class ActsAsSolrTest < Test::Unit::TestCase
     assert_equal "Novella: Something Short", Encyclopedia.new(:name => "Something Short").name_for_solr 
   end
 
-  def test_should_not_stop_save_if_solr_commit_fails_when_noncritical_index_is_true
+  def test_should_not_stop_save_if_solr_commit_fails_when_crucial_is_false
     b = Dictionary.new(:name => "test_should_not_stop_save_if_solr_commit_fails", :category_id => 1, :author => 'Peter Williams')
     b.stubs(:solr_commit).raises(Class.new(Exception), "something bad happened")
 
@@ -447,7 +447,7 @@ class ActsAsSolrTest < Test::Unit::TestCase
     }
   end
 
-  def test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false
+  def test_should_stop_save_if_solr_commit_fails_when_crucial_is_true
     my_exception_class = Class.new(Exception)
     b = Book.new(:name => "test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false", :category_id => 1, :author => 'Peter Williams')
     b.stubs(:solr_commit).raises(my_exception_class, "something bad happened")

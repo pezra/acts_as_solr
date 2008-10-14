@@ -95,7 +95,9 @@ module ActsAsSolr #:nodoc:
     #                   acts_as_solr :auto_commit => false
     #                 end
     # 
-    
+    # crucial:: When false failure to save a record to solr will
+    #   *not* prevent the ActiveRecord from being saved.  Default: true
+    #
     def acts_as_solr(options={}, solr_options={})
       
       extend ClassMethods
@@ -114,7 +116,8 @@ module ActsAsSolr #:nodoc:
         :include => nil,
         :facets => nil,
         :boost => nil,
-        :if => "true"
+        :if => "true",
+        :crucial => true
       }  
       
       self.solr_configuration = {
