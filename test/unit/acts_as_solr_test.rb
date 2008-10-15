@@ -2,11 +2,12 @@ require "#{File.dirname(File.expand_path(__FILE__))}/../test_helper"
 
 class Encyclopedia < ActiveRecord::Base
   set_table_name :books
+  acts_as_solr :auto_save => false
 end
 
 class Dictionary < ActiveRecord::Base
   set_table_name :books
-  acts_as_solr :fields => [:name], :crucial => false
+  acts_as_solr :fields => [:name], :silence_failures => true
 end
  
 class ActsAsSolrTest < Test::Unit::TestCase
@@ -427,18 +428,17 @@ class ActsAsSolrTest < Test::Unit::TestCase
   end
   
   def test_for_solr_method_not_generated_if_one_already_exists
-    Encyclopedia.module_eval do
-      def name_for_solr
-        "Novella: #{self.name}"
-      end
+    klass = Class.new(ActiveRecord::Base) do
+      set_table_name :books
+      def name_for_solr() "Novella: #{self.name}" end
     end
     
-    assert_equal "Novella: Something Short", Encyclopedia.new(:name => "Something Short").name_for_solr
-    Encyclopedia.acts_as_solr
-    assert_equal "Novella: Something Short", Encyclopedia.new(:name => "Something Short").name_for_solr 
+    assert_equal "Novella: Something Short", klass.new(:name => "Something Short").name_for_solr
+    klass.acts_as_solr
+    assert_equal "Novella: Something Short", klass.new(:name => "Something Short").name_for_solr 
   end
 
-  def test_should_not_stop_save_if_solr_commit_fails_when_crucial_is_false
+  def test_should_not_stop_save_if_solr_commit_fails_when_silence_failures_is_true
     b = Dictionary.new(:name => "test_should_not_stop_save_if_solr_commit_fails", :category_id => 1, :author => 'Peter Williams')
     b.stubs(:solr_commit).raises(Class.new(Exception), "something bad happened")
 
@@ -447,7 +447,7 @@ class ActsAsSolrTest < Test::Unit::TestCase
     }
   end
 
-  def test_should_stop_save_if_solr_commit_fails_when_crucial_is_true
+  def test_should_stop_save_if_solr_commit_fails_when_silence_failures_is_not_specified
     my_exception_class = Class.new(Exception)
     b = Book.new(:name => "test_should_stop_save_if_solr_commit_fails_when_noncritical_index_is_false", :category_id => 1, :author => 'Peter Williams')
     b.stubs(:solr_commit).raises(my_exception_class, "something bad happened")
@@ -480,5 +480,35 @@ class ActsAsSolrTest < Test::Unit::TestCase
     assert_nothing_raised {
       results = Book.find_by_solr 'hello'
     }
+  end
+
+  def test_should_not_save_to_solr_when_auto_save_is_false
+    e = Encyclopedia.new(:name => 'test_should_not_save_to_solr_when_auto_save_is_false', :category_id => 1)
+    e.expects(:solr_save).never
+
+    e.save!
+  end
+
+  def test_should_save_to_solr_when_auto_save_is_not_set_explicity
+    b = Dictionary.new(:name => 'test_should_save_to_solr_when_auto_save_is_not_set_explicity', :category_id => 1)
+    b.expects(:solr_save).once
+
+    b.save!
+  end
+
+  def test_acts_as_solr_should_add_solr_save_callback
+    klass = Class.new(ActiveRecord::Base) { set_table_name :books }
+
+    assert_equal 0, klass.after_save_callback_chain.select{|c| c.method == :solr_save}.size
+    klass.acts_as_solr
+    assert_equal 1, klass.after_save_callback_chain.select{|c| c.method == :solr_save}.size
+  end
+
+  def test_acts_as_solr_should_not_add_solr_save_callback_if_auto_save_is_false
+    klass = Class.new(ActiveRecord::Base) { set_table_name :books }
+
+    assert_equal 0, klass.after_save_callback_chain.select{|c| c.method == :solr_save}.size
+    klass.acts_as_solr :auto_save => false
+    assert_equal 0, klass.after_save_callback_chain.select{|c| c.method == :solr_save}.size
   end
 end

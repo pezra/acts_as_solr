@@ -95,9 +95,14 @@ module ActsAsSolr #:nodoc:
     #                   acts_as_solr :auto_commit => false
     #                 end
     # 
-    # crucial:: When false failure to save a record to solr will
-    #   *not* prevent the ActiveRecord from being saved.  Default: true
+    # silence_failures:: When true a failure to save a record to solr
+    #   will *not* prevent the rest of the callbacks from running
+    #   ActiveRecord from being saved.  Default: false
     #
+    # auto_save:: When true saving the model will also save a
+    #   corresponding record to solr, otherwise that step is skipped.
+    #   Default: true
+
     def acts_as_solr(options={}, solr_options={})
       
       extend ClassMethods
@@ -117,7 +122,8 @@ module ActsAsSolr #:nodoc:
         :facets => nil,
         :boost => nil,
         :if => "true",
-        :crucial => true
+        :silence_failures => false,
+        :auto_save => true
       }  
       
       self.solr_configuration = {
@@ -132,8 +138,8 @@ module ActsAsSolr #:nodoc:
       
       configuration[:solr_fields] = []
       
-      after_save    :solr_save
-      after_destroy :solr_destroy
+      after_save(:solr_save) if self.configuration[:auto_save]
+      after_destroy(:solr_destroy)
 
       if configuration[:fields].respond_to?(:each)
         process_fields(configuration[:fields])
@@ -203,6 +209,6 @@ module ActsAsSolr #:nodoc:
       else
         [field, {:type => type_for_field(field)}]
       end
-  	end
+    end
   end
 end

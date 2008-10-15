@@ -30,19 +30,22 @@ module ActsAsSolr #:nodoc:
 
       if evaluate_condition(configuration[:if], self) 
         return true unless needs_solr_indexing? || force  # This object does not need to be reindexed
-        logger.debug "solr_save: #{self.class.name} : #{record_id(self)}"
-        solr_add to_solr_doc
-        solr_commit if configuration[:auto_commit]
-        true
+        begin
+          logger.debug "solr_save: #{self.class.name} : #{record_id(self)}"
+          solr_add to_solr_doc
+          solr_commit if configuration[:auto_commit]
+        rescue Exception => e
+          if configuration[:silence_failures]
+            # Just log the failure and return as if it worked
+            logger.error "Could not add document to Solr: #{$!}"
+          else
+            raise e
+          end
+        end
+        return true
+
       else
         solr_destroy
-      end
-    rescue Exception => e
-      if configuration[:crucial]
-        raise e
-      else
-        # Just log the failure and return as if it worked
-        logger.error "Could not add or remove document in Solr: #{$!}"        
       end
     end
 
@@ -51,7 +54,16 @@ module ActsAsSolr #:nodoc:
       logger.debug "solr_destroy: #{self.class.name} : #{record_id(self)}"
       solr_delete solr_id
       solr_commit if configuration[:auto_commit]
-      true
+      return true
+
+    rescue Exception => e
+      if configuration[:silence_failures]
+        # Just log the failure and return as if it worked
+        logger.error "Could not remove document from Solr: #{$!}"
+        return true
+      else
+        raise e
+      end
     end
 
     # convert instance to Solr document
